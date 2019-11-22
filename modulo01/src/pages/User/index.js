@@ -24,22 +24,7 @@ export default function User({ navigation }) {
 
   const currentUser = navigation.getParam('user');
 
-  async function fetchUser() {
-    const user = navigation.getParam('user');
-
-    setLoading(true);
-
-    const response = await api.get(`/users/${user.login}/starred`);
-
-    setStars(response.data);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  async function loadMore() {
+  async function loadPage() {
     const user = navigation.getParam('user');
 
     setPage(page + 1);
@@ -48,6 +33,10 @@ export default function User({ navigation }) {
 
     setStars([...stars, ...response.data]);
   }
+
+  useEffect(() => {
+    loadPage();
+  }, []);
 
   return (
     <Container>
@@ -64,7 +53,7 @@ export default function User({ navigation }) {
           data={stars}
           keyExtractor={star => String(star.id)}
           onEndReachedThreshold={0.2}
-          onEndReached={loadMore}
+          onEndReached={loadPage}
           renderItem={({ item }) => (
             <Starred>
               <OwenerAvatar source={{ uri: item.owner.avatar_url }} />
