@@ -8,3 +8,13 @@ export const Container = styled.View`
 export const WebView = styled(Web)`
   flex: 1;
 `;
+
+export const Loading = styled.ActivityIndicator.attrs({
+  size: 'large',
+})`
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+`;
