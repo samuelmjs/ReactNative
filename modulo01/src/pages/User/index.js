@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
 import PropTypes from 'prop-types';
 import api from '../../services/api';
 
@@ -15,28 +14,47 @@ import {
   Info,
   Title,
   Author,
+  Loading,
 } from './styles';
 
 export default function User({ navigation }) {
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   const currentUser = navigation.getParam('user');
 
-  async function loadPage() {
+  async function loadPage(pageNumber = page, shouldRefresh = false) {
     const user = navigation.getParam('user');
 
-    setPage(page + 1);
+    setLoading(true);
 
-    const response = await api.get(`/users/${user.login}/starred?page=${page}`);
+    const response = await api.get(
+      `/users/${user.login}/starred?page=${pageNumber}`
+    );
 
-    setStars([...stars, ...response.data]);
+    setLoading(false);
+    setPage(pageNumber + 1);
+
+    setStars(shouldRefresh ? response.data : [...stars, ...response.data]);
+  }
+
+  async function refreshList() {
+    setRefreshing(true);
+
+    await loadPage(1, true);
+
+    setRefreshing(false);
   }
 
   useEffect(() => {
     loadPage();
   }, []);
+
+  function handleNavigate(starred) {
+    navigation.navigate('StarredRepo', { starred });
+  }
 
   return (
     <Container>
@@ -46,25 +64,24 @@ export default function User({ navigation }) {
         <Bio>{currentUser.bio}</Bio>
       </Header>
 
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Stars
-          data={stars}
-          keyExtractor={star => String(star.id)}
-          onEndReachedThreshold={0.2}
-          onEndReached={loadPage}
-          renderItem={({ item }) => (
-            <Starred>
-              <OwenerAvatar source={{ uri: item.owner.avatar_url }} />
-              <Info>
-                <Title>{item.name}</Title>
-                <Author>{item.owner.login}</Author>
-              </Info>
-            </Starred>
-          )}
-        />
-      )}
+      <Stars
+        data={stars}
+        keyExtractor={star => String(star.id)}
+        onEndReachedThreshold={0.2}
+        onEndReached={() => loadPage()}
+        onRefresh={refreshList}
+        refreshing={refreshing}
+        ListFooterComponent={loading && <Loading />}
+        renderItem={({ item }) => (
+          <Starred onPress={() => handleNavigate(item)}>
+            <OwenerAvatar source={{ uri: item.owner.avatar_url }} />
+            <Info>
+              <Title>{item.name}</Title>
+              <Author>{item.owner.login}</Author>
+            </Info>
+          </Starred>
+        )}
+      />
     </Container>
   );
 }
